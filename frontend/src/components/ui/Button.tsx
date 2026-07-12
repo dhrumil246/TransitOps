@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'ghost' | 'outline' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -17,21 +17,21 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+          'btn',
           {
-            'bg-brand text-white hover:bg-brand/90': variant === 'primary',
-            'hover:bg-panel text-primary': variant === 'ghost',
-            'border border-border bg-transparent hover:bg-panel': variant === 'outline',
-            'bg-status-retired text-white hover:bg-status-retired/90': variant === 'danger',
-            'h-8 px-3 text-xs': size === 'sm',
-            'h-10 px-4 py-2 text-sm': size === 'md',
-            'h-11 rounded-md px-8 text-base': size === 'lg',
+            'btn-primary':   variant === 'primary',
+            'btn-secondary': variant === 'secondary',
+            'btn-ghost':     variant === 'ghost',
+            'btn-ghost':     variant === 'outline',
+            'btn-danger':    variant === 'danger',
+            'btn-sm': size === 'sm',
+            'btn-lg': size === 'lg',
           },
           className
         )}
         {...props}
       />
-    )
+    );
   }
-)
-Button.displayName = "Button"
+);
+Button.displayName = 'Button';
