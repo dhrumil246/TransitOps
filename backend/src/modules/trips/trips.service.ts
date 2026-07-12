@@ -26,6 +26,19 @@ export async function listTrips(status?: string) {
   });
 }
 
+// ---- Get single trip ----
+export async function getTripById(id: string) {
+  const trip = await prisma.trip.findUnique({
+    where: { id },
+    include: {
+      vehicle: { select: { regNo: true, name: true, status: true, maxLoadKg: true } },
+      driver:  { select: { name: true, status: true, licenseCategory: true } },
+    },
+  });
+  if (!trip) throw new NotFoundError('Trip not found');
+  return trip;
+}
+
 // ---- Dispatch options — ONLY assignable vehicles + drivers ----
 export async function getDispatchOptions() {
   const [vehicles, drivers] = await Promise.all([
@@ -109,7 +122,7 @@ export async function dispatchTrip(id: string) {
 // ---- Complete: DISPATCHED → COMPLETED, both → AVAILABLE, log fuel ----
 export async function completeTrip(
   id: string,
-  body: { finalOdometer: number; fuelConsumedL: number; revenue: number },
+  body: { finalOdometer: number; fuelConsumedL: number; revenue: number; fuelCost?: number },
 ) {
   return prisma.$transaction(async (tx) => {
     const trip = await tx.trip.findUnique({ where: { id } });
@@ -130,7 +143,7 @@ export async function completeTrip(
       data: {
         vehicleId: trip.vehicleId,
         liters:    body.fuelConsumedL,
-        cost:      0,              // cost unknown at completion; set 0
+        cost:      body.fuelCost ?? 0,   // fuelCost optional; defaults to 0 if not provided
         odometer:  body.finalOdometer,
       },
     });

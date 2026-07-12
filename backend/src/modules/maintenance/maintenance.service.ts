@@ -7,10 +7,11 @@
 import prisma from '../../lib/prisma';
 import { ValidationError, NotFoundError } from '../../middleware/error';
 
-// ---- List ----
-export async function listMaintenance() {
+// ---- List — optional ?vehicleId filter ----
+export async function listMaintenance(vehicleId?: string) {
   return prisma.maintenanceLog.findMany({
-    include: { vehicle: { select: { regNo: true, name: true } } },
+    where: vehicleId ? { vehicleId } : undefined,
+    include: { vehicle: { select: { regNo: true, name: true, status: true } } },
     orderBy: { openedAt: 'desc' },
   });
 }

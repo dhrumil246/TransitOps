@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth';
 import {
   listHandler,
+  getOneHandler,
   dispatchOptionsHandler,
   createHandler,
   dispatchHandler,
@@ -22,6 +23,9 @@ tripsRouter.get('/', listHandler);
 
 // GET  /api/trips/dispatch-options  ← must be before /:id to avoid conflict
 tripsRouter.get('/dispatch-options', dispatchOptionsHandler);
+
+// GET  /api/trips/:id
+tripsRouter.get('/:id', getOneHandler);
 
 // POST /api/trips
 tripsRouter.post('/', createHandler);

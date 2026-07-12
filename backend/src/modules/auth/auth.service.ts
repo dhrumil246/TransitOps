@@ -6,7 +6,7 @@
 import bcrypt from 'bcryptjs';
 import prisma from '../../lib/prisma';
 import { signToken } from '../../lib/jwt';
-import { ConflictError, ValidationError } from '../../middleware/error';
+import { ConflictError, ValidationError, NotFoundError } from '../../middleware/error';
 
 type Role = 'FLEET_MANAGER' | 'DRIVER' | 'SAFETY_OFFICER' | 'FINANCIAL_ANALYST';
 
@@ -58,6 +58,6 @@ export async function getMe(userId: string) {
     where: { id: userId },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
   });
-  if (!user) throw new ValidationError('User not found');
+  if (!user) throw new NotFoundError('User not found');
   return user;
 }

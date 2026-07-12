@@ -4,7 +4,7 @@
 // ============================================================================
 
 import prisma from '../../lib/prisma';
-import { ConflictError, NotFoundError } from '../../middleware/error';
+import { ConflictError, NotFoundError, ValidationError } from '../../middleware/error';
 import { Prisma, DriverStatus } from '@prisma/client';
 
 // ---- List with filter / search / sort ----
@@ -88,7 +88,10 @@ export async function updateDriver(id: string, data: Prisma.DriverUpdateInput) {
 
 // ---- Delete ----
 export async function deleteDriver(id: string) {
-  await getDriver(id); // ensure exists
+  const driver = await getDriver(id); // ensure exists
+  if (driver.status === 'ON_TRIP') {
+    throw new ValidationError('Cannot delete a driver that is currently On Trip');
+  }
   return prisma.driver.delete({ where: { id } });
 }
 

@@ -5,7 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as maintenanceService from './maintenance.service';
 
 export async function listHandler(req: Request, res: Response, next: NextFunction) {
-  try { res.json(await maintenanceService.listMaintenance()); } catch (e) { next(e); }
+  try { res.json(await maintenanceService.listMaintenance(req.query.vehicleId as string | undefined)); } catch (e) { next(e); }
 }
 
 export async function openHandler(req: Request, res: Response, next: NextFunction) {

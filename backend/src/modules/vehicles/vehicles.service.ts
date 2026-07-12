@@ -4,7 +4,7 @@
 // ============================================================================
 
 import prisma from '../../lib/prisma';
-import { ConflictError, NotFoundError } from '../../middleware/error';
+import { ConflictError, NotFoundError, ValidationError } from '../../middleware/error';
 import { Prisma, VehicleType, VehicleStatus } from '@prisma/client';
 
 // ---- List with filter / search / sort ----
@@ -75,7 +75,12 @@ export async function updateVehicle(
   id: string,
   data: Prisma.VehicleUpdateInput,
 ) {
-  await getVehicle(id); // ensure exists
+  const existing = await getVehicle(id); // ensure exists
+
+  // Business rule: RETIRED is a terminal status — cannot be changed via a plain PATCH
+  if (existing.status === 'RETIRED' && data.status && data.status !== 'RETIRED') {
+    throw new ValidationError('Retired vehicles cannot be reactivated');
+  }
 
   // If changing regNo, check uniqueness
   if (data.regNo && typeof data.regNo === 'string') {
@@ -90,7 +95,13 @@ export async function updateVehicle(
 
 // ---- Delete ----
 export async function deleteVehicle(id: string) {
-  await getVehicle(id); // ensure exists
+  const vehicle = await getVehicle(id); // ensure exists
+  if (vehicle.status === 'ON_TRIP') {
+    throw new ValidationError('Cannot delete a vehicle that is currently On Trip');
+  }
+  if (vehicle.status === 'IN_SHOP') {
+    throw new ValidationError('Cannot delete a vehicle that is currently In Shop — close the maintenance log first');
+  }
   return prisma.vehicle.delete({ where: { id } });
 }
 
