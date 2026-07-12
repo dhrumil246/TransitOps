@@ -1,19 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 
 function load(key: string) { try { return JSON.parse(localStorage.getItem('to_' + key) || 'null'); } catch { return null; } }
 function save(key: string, val: any) { localStorage.setItem('to_' + key, JSON.stringify(val)); }
 
 export default function Drivers() {
+  const { searchQuery } = useOutletContext<{searchQuery:string}>();
   const [drivers, setDrivers] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+
+  // Add form state
+  const [name, setName] = useState('');
+  const [license, setLicense] = useState('');
+  const [category, setCategory] = useState('LMV');
+  const [expiry, setExpiry] = useState('');
 
   useEffect(() => { setDrivers(load('drivers') || []); }, []);
   function reload() { setDrivers([...(load('drivers') || [])]); }
 
   const filtered = drivers.filter(d => {
     if (filterStatus && d.status !== filterStatus) return false;
-    if (search && !d.name.toLowerCase().includes(search.toLowerCase()) && !d.license.toLowerCase().includes(search.toLowerCase())) return false;
+    const q = searchQuery || search;
+    if (q && !d.name.toLowerCase().includes(q.toLowerCase()) && !d.license.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
 
@@ -22,6 +32,26 @@ export default function Drivers() {
     const d = list.find((x:any) => x.id === id);
     if (d) d.status = status;
     save('drivers', list);
+    reload();
+  }
+
+  function handleAdd() {
+    if (!name || !license || !expiry) return alert('Fill all fields');
+    const [y, m] = expiry.split('-');
+    const newDriver = {
+      id: 'DRV' + Math.floor(100+Math.random()*900),
+      name,
+      initials: name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase(),
+      color: '#0f172a', textColor: '#fff',
+      role: 'Standard Driver',
+      license, category,
+      expiry: `${m}/${y}`,
+      trips: 0, score: 100, status: 'Available'
+    };
+    const list = load('drivers') || [];
+    save('drivers', [newDriver, ...list]);
+    setShowAdd(false);
+    setName(''); setLicense(''); setExpiry(''); setCategory('LMV');
     reload();
   }
 
@@ -48,6 +78,10 @@ export default function Drivers() {
         <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{height:32,padding:'0 28px 0 10px',border:'1px solid #e2e8f0',borderRadius:999,fontSize:12,fontWeight:500,color:'#475569',background:'#fff',appearance:'none' as any,cursor:'pointer',fontFamily:"'Inter',sans-serif",outline:'none'}}>
           <option value="">Status: All</option><option>Available</option><option>On Trip</option><option>Off Duty</option><option>Suspended</option>
         </select>
+        <button className="btn btn-primary" onClick={()=>setShowAdd(true)}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Driver
+        </button>
       </div>
 
       <div className="card">
@@ -123,6 +157,36 @@ export default function Drivers() {
           Only <strong style={{color:'#0f172a',margin:'0 3px'}}>Available</strong> drivers are eligible for dispatch. <strong style={{color:'#dc2626',margin:'0 3px'}}>Expired</strong> licenses block trip assignment automatically.
         </div>
       </div>
+
+      {showAdd && (
+        <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)setShowAdd(false)}}>
+          <div className="modal-box" style={{width: 400}}>
+            <h2 style={{marginTop:0}}>Add New Driver</h2>
+            <div className="form-group">
+              <label className="form-label">Name</label>
+              <input type="text" className="form-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Full Name" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">License Number</label>
+              <input type="text" className="form-input" value={license} onChange={e=>setLicense(e.target.value)} placeholder="XX00 XX 0000" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">License Category</label>
+              <select className="form-select" value={category} onChange={e=>setCategory(e.target.value)}>
+                <option>LMV</option><option>MCV</option><option>HGV</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Expiry Date</label>
+              <input type="month" className="form-input" value={expiry} onChange={e=>setExpiry(e.target.value)} />
+            </div>
+            <div style={{display:'flex',justifyContent:'flex-end',gap:10,marginTop:20}}>
+              <button className="btn btn-ghost" onClick={()=>setShowAdd(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleAdd}>Add Driver</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

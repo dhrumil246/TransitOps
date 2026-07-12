@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 
 function load(key: string) { try { return JSON.parse(localStorage.getItem('to_' + key) || 'null'); } catch { return null; } }
 function save(key: string, val: any) { localStorage.setItem('to_' + key, JSON.stringify(val)); }
 
 export default function Vehicles() {
+  const { searchQuery } = useOutletContext<{searchQuery:string}>();
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');

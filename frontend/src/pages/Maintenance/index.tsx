@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 
 function load(key: string) { try { return JSON.parse(localStorage.getItem('to_' + key) || 'null'); } catch { return null; } }
 function save(key: string, val: any) { localStorage.setItem('to_' + key, JSON.stringify(val)); }
 
 export default function Maintenance() {
+  const { searchQuery } = useOutletContext<{searchQuery:string}>();
   const [records, setRecords] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   
@@ -23,6 +25,11 @@ export default function Maintenance() {
     setRecords([...(load('maintenance') || [])]); 
     setVehicles([...(load('vehicles') || [])]);
   }
+
+  const filtered = records.filter(r => {
+    if (searchQuery && !r.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) && !r.service.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
 
   function handleSave() {
     if (!vehicle) return alert("Select a vehicle");
@@ -50,8 +57,8 @@ export default function Maintenance() {
     reload();
   }
 
-  const total = records.reduce((s:number,r:any) => s + Number(r.cost), 0);
-  const inShopCount = records.filter(r => r.status === 'In Shop').length;
+  const total = filtered.reduce((s:number,r:any) => s + Number(r.cost), 0);
+  const inShopCount = filtered.filter(r => r.status === 'In Shop').length;
 
   return (
     <>
@@ -119,22 +126,22 @@ export default function Maintenance() {
               <button className="btn btn-ghost btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
             </div>
           </div>
-          <table className="service-log-table">
+          <table className="data-table">
             <thead><tr><th>VEHICLE</th><th>SERVICE</th><th>COST</th><th>DATE</th><th>STATUS</th></tr></thead>
             <tbody>
-              {records.map(r => (
+              {filtered.map(r => (
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#0f172a'}}>{r.vehicle}</td>
                   <td>{r.service}</td>
                   <td className="cost-cell">₹{Number(r.cost).toLocaleString('en-IN')}</td>
                   <td style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11.5,color:'#94a3b8'}}>{new Date(r.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td>
-                  <td><span className={`pill ${r.status==='In Shop'?'pill-inshop':'pill-available'}`}>{r.status}</span></td>
+                  <td><span className={`pill ${r.status==='In Shop'?'pill-inshop':'pill-completed'}`}>{r.status}</span></td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div style={{padding:'12px 20px',borderTop:'1px solid #f1f5f9',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:11,color:'#94a3b8',fontWeight:500}}>Showing {records.length} records</span>
+            <span style={{fontSize:11,color:'#94a3b8',fontWeight:500}}>Showing {filtered.length} records</span>
             <div style={{fontSize:12,fontWeight:700,color:'#0f172a'}}>Total: <span style={{fontFamily:"'JetBrains Mono',monospace",color:'#dc2626'}}>₹{total.toLocaleString('en-IN')}</span></div>
           </div>
         </div>

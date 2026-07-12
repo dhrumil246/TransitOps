@@ -31,7 +31,7 @@ const PAGE_TITLES: Record<string, { title: string; breadcrumb: string }> = {
   '/settings': { title: 'Settings', breadcrumb: 'System' },
 };
 
-function Topbar() {
+function Topbar({ search, setSearch }: { search: string; setSearch: (v:string)=>void }) {
   const location = useLocation();
   const info = PAGE_TITLES[location.pathname] || { title: 'TransitOps', breadcrumb: '' };
   const now = new Date();
@@ -44,7 +44,7 @@ function Topbar() {
       <div className="topbar-right">
         <div className="search-bar">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" placeholder="Search fleet, drivers, trips..." />
+          <input type="text" placeholder="Search fleet, drivers, trips..." value={search} onChange={e=>setSearch(e.target.value)} />
         </div>
         <div className="topbar-date">
           <span style={{fontWeight:700,color:'#475569'}}>{now.toLocaleDateString('en-IN',{weekday:'short',day:'numeric'})}</span>
@@ -60,13 +60,14 @@ function Topbar() {
 }
 
 function Layout() {
+  const [searchQuery, setSearchQuery] = React.useState('');
   return (
     <div style={{display:'flex',minHeight:'100vh',width:'100%'}}>
       <Sidebar />
       <div className="main-content" style={{flex:1, minWidth:0}}>
-        <Topbar />
+        <Topbar search={searchQuery} setSearch={setSearchQuery} />
         <div className="page-body">
-          <Outlet />
+          <Outlet context={{ searchQuery }} />
         </div>
       </div>
     </div>
