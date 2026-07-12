@@ -7,6 +7,7 @@
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -87,6 +88,8 @@ model Vehicle {
   maintenanceLogs MaintenanceLog[]
   fuelLogs        FuelLog[]
   expenses        Expense[]
+
+  @@index([status])
 }
 
 model Driver {
@@ -101,6 +104,9 @@ model Driver {
   createdAt       DateTime     @default(now())
 
   trips Trip[]
+
+  @@index([status])
+  @@index([licenseExpiry])
 }
 
 model Trip {
@@ -123,6 +129,10 @@ model Trip {
   dispatchedAt DateTime?
   completedAt  DateTime?
   createdAt    DateTime  @default(now())
+
+  @@index([status])
+  @@index([vehicleId])
+  @@index([driverId])
 }
 
 model MaintenanceLog {
@@ -135,6 +145,9 @@ model MaintenanceLog {
   notes     String?
   openedAt  DateTime          @default(now())
   closedAt  DateTime?
+
+  @@index([status])
+  @@index([vehicleId])
 }
 
 model FuelLog {
@@ -145,6 +158,8 @@ model FuelLog {
   cost      Float
   odometer  Int?
   date      DateTime @default(now())
+
+  @@index([vehicleId])
 }
 
 model Expense {
@@ -155,4 +170,6 @@ model Expense {
   amount      Float
   description String?
   date        DateTime    @default(now())
+
+  @@index([vehicleId])
 }

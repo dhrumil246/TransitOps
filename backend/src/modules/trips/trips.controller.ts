@@ -6,7 +6,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as tripsService from './trips.service';
 
 export async function listHandler(req: Request, res: Response, next: NextFunction) {
-  try { res.json(await tripsService.listTrips(req.query.status as string | undefined)); } catch (e) { next(e); }
+  try { res.json(await tripsService.listTrips(req.query.status as string | undefined, req.query.skip as string | undefined, req.query.take as string | undefined)); } catch (e) { next(e); }
 }
 
 export async function getOneHandler(req: Request, res: Response, next: NextFunction) {

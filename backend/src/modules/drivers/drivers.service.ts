@@ -12,6 +12,8 @@ export async function listDrivers(query: {
   status?: string;
   search?: string;
   sort?: string;
+  skip?: string;
+  take?: string;
 }) {
   const where: Prisma.DriverWhereInput = {};
 
@@ -36,7 +38,12 @@ export async function listDrivers(query: {
     }
   }
 
-  return prisma.driver.findMany({ where, orderBy });
+  return prisma.driver.findMany({ 
+    where, 
+    orderBy,
+    skip: query.skip ? Number(query.skip) : undefined,
+    take: query.take ? Number(query.take) : undefined,
+  });
 }
 
 // ---- Create ----

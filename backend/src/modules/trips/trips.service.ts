@@ -14,10 +14,12 @@ import {
 } from './rules';
 
 // ---- List trips (live board) — optional ?status= filter ----
-export async function listTrips(status?: string) {
+export async function listTrips(status?: string, skip?: string, take?: string) {
   const where = status ? { status: status as TripStatus } : {};
   return prisma.trip.findMany({
     where,
+    skip: skip ? Number(skip) : undefined,
+    take: take ? Number(take) : undefined,
     include: {
       vehicle: { select: { regNo: true, name: true, status: true } },
       driver:  { select: { name: true, status: true } },
