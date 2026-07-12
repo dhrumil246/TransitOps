@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-12T10:15:00Z",
+  "title": "Design System: TransitOps",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Deep Coastal Teal", "canonical": "#0f766e" },
+      "primary-light": { "role": "primary", "displayName": "Coastal Mint", "canonical": "#14b8a6" },
+      "brand-orange": { "role": "primary", "displayName": "Brand Orange", "canonical": "#E8862E" },
+      "canvas": { "role": "neutral", "displayName": "Canvas Sand", "canonical": "#f0efea" },
+      "sidebar": { "role": "neutral", "displayName": "Deep Sidebar", "canonical": "#0c0c0c" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "KPI values and primary page titles." },
+      "body": { "displayName": "Body", "purpose": "Standard table rows, inputs, and general text." },
+      "label": { "displayName": "Label / Mono", "purpose": "Table headers, IDs, amounts, and critical dates." }
+    },
+    "shadows": [
+      { "name": "ambient-card", "value": "0 1px 3px rgba(15,23,42,0.06)", "purpose": "Default ambient shadow for surface cards." },
+      { "name": "lift-btn", "value": "0 2px 6px rgba(15,118,110,0.35)", "purpose": "Lift for primary actions." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action button with tactile hover lift.",
+      "html": "<button class=\"ds-btn-primary\">DISPATCH VEHICLE</button>",
+      "css": ".ds-btn-primary { background: linear-gradient(135deg, #0f766e, #14b8a6); color: #fff; padding: 0 16px; height: 36px; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s ease; box-shadow: 0 2px 6px rgba(15,118,110,0.35); } .ds-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,118,110,0.4); } .ds-btn-primary:active { transform: translateY(0); }"
+    },
+    {
+      "name": "Status Pill (Available)",
+      "kind": "chip",
+      "refersTo": "pill-available",
+      "description": "Visual indicator for positive operational state.",
+      "html": "<span class=\"ds-pill ds-pill-available\">Available</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid; white-space: nowrap; font-family: 'Inter', sans-serif; } .ds-pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; display: block; } .ds-pill-available { color: #059669; background: #ecfdf5; border-color: #a7f3d0; } .ds-pill-available::before { background: #059669; }"
+    },
+    {
+      "name": "Data Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Standard container for dashboards and tables.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\">Overview</div><div class=\"ds-card-body\">Content goes here</div></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); font-family: 'Inter', sans-serif; } .ds-card-header { padding: 18px 20px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em; } .ds-card-body { padding: 20px; font-size: 13px; color: #475569; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Command Center",
+    "overview": "TransitOps is a crisp, high-density environment that prioritizes accurate data and expert confidence without clutter. The design philosophy centers on maximizing real-time operational control for fleet managers, providing them with the exact data they need, instantly, without unnecessary ornamentation. It explicitly rejects cluttered, outdated enterprise ERP aesthetics in favor of a modern, professional, and tactile experience.",
+    "keyCharacteristics": [
+      "Practice what you preach: Data should be accurate and accessible.",
+      "Expert confidence: The tool empowers managers without getting in their way.",
+      "High density without clutter: Maximize information, minimize noise."
+    ],
+    "rules": [
+      { "name": "The Status Clarity Rule", "body": "Status colors (Green, Amber, Red) are reserved strictly for operational states (Available, On Trip, In Shop) and must never be used for brand decoration.", "section": "colors" },
+      { "name": "The Tabular Data Rule", "body": "All IDs, financial amounts, and critical dates must use the JetBrains Mono font to ensure perfect vertical alignment in dense tables.", "section": "typography" }
+    ],
+    "dos": [
+      "Do use JetBrains Mono for IDs, amounts, and dates to align data vertically.",
+      "Do use the Flat-By-Default shadow strategy; reserve heavy shadows for modals or dropdowns.",
+      "Do maintain high density without clutter by using consistent padding (e.g., 20px inside cards)."
+    ],
+    "donts": [
+      "Don't design a cluttered, outdated enterprise ERP from 2005. Keep it crisp.",
+      "Don't use status colors (Green/Amber/Red) for decorative purposes.",
+      "Don't use large, sweeping gradients outside of the primary button or logo mark."
+    ]
+  }
+}
