@@ -7,6 +7,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import { errorHandler } from './middleware/error';
 
 // Module routers
@@ -24,6 +25,7 @@ const app = express();
 
 // ---- Middleware ----
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(compression());
 app.use(express.json());
 
 // ---- Health check ----

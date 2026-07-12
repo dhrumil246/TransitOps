@@ -14,6 +14,8 @@ export async function listVehicles(query: {
   region?: string;
   search?: string;
   sort?: string;
+  skip?: string;
+  take?: string;
 }) {
   const where: Prisma.VehicleWhereInput = {};
 
@@ -44,7 +46,12 @@ export async function listVehicles(query: {
     }
   }
 
-  return prisma.vehicle.findMany({ where, orderBy });
+  return prisma.vehicle.findMany({ 
+    where, 
+    orderBy,
+    skip: query.skip ? Number(query.skip) : undefined,
+    take: query.take ? Number(query.take) : undefined,
+  });
 }
 
 // ---- Create ----
