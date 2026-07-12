@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TransitOps — Authentication</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:#0C0C0C;min-height:100vh;display:flex;color:#111;line-height:1.5;-webkit-font-smoothing:antialiased}
+.left{width:42%;background:#0C0C0C;display:flex;flex-direction:column;justify-content:space-between;padding:48px;position:relative;overflow:hidden}
+.left::before{content:'';position:absolute;inset:0;opacity:.025;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:24px 24px}
+.left::after{content:'';position:absolute;top:-100px;right:-60px;width:360px;height:360px;background:radial-gradient(circle,rgba(13,148,136,.15) 0%,transparent 70%);border-radius:50%;pointer-events:none}
+.brand{position:relative;z-index:1;display:flex;align-items:center;gap:12px;margin-bottom:56px}
+.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,#0d9488,#2dd4bf);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-icon svg{width:20px;height:20px}
+.brand-name{font-size:18px;font-weight:700;color:#fafafa;letter-spacing:-.3px}
+.brand-tag{font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:1.6px;font-weight:600;margin-top:1px}
+.hero-heading{font-size:34px;font-weight:800;color:#fafafa;letter-spacing:-.8px;line-height:1.18;margin-bottom:16px;position:relative;z-index:1}
+.hero-heading span{background:linear-gradient(135deg,#0d9488,#2dd4bf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13px;color:#6b7280;line-height:1.65;max-width:300px;margin-bottom:40px;position:relative;z-index:1}
+.roles-section{position:relative;z-index:1}
+.roles-title{font-size:10px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px}
+.role-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05);border-radius:8px;margin-bottom:8px;transition:background .15s}
+.role-item:hover{background:rgba(255,255,255,.06)}
+.role-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.role-name{font-size:13px;font-weight:600;color:#e5e7eb}
+.role-desc{font-size:11px;color:#6b7280;margin-top:1px}
+.left-footer{font-size:10.5px;color:#374151;position:relative;z-index:1;font-weight:500}
+.right{flex:1;background:#F0EFEA;display:flex;align-items:center;justify-content:center;padding:48px;position:relative}
+.right::before{content:'';position:absolute;bottom:0;right:0;width:250px;height:250px;background:radial-gradient(circle,rgba(13,148,136,.06) 0%,transparent 70%);pointer-events:none}
+.form-box{width:100%;max-width:400px;position:relative;z-index:1}
+.form-title{font-size:24px;font-weight:800;color:#0c0c0c;letter-spacing:-.6px;margin-bottom:4px}
+.form-sub{font-size:13px;color:#9ca3af;font-weight:500;margin-bottom:28px}
+.error-box{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;margin-bottom:22px;display:flex;align-items:flex-start;gap:10px}
+.error-box svg{flex-shrink:0;margin-top:1px}
+.error-title{font-size:12px;font-weight:700;color:#991b1b;margin-bottom:2px}
+.error-desc{font-size:11px;color:#b91c1c}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.input-wrap{position:relative}
+.form-input{width:100%;height:44px;border:1.5px solid #e5e7eb;border-radius:8px;padding:0 14px;font-size:14px;color:#111827;outline:none;background:#fff;font-family:'Inter',sans-serif;transition:border-color .15s,box-shadow .15s}
+.form-input:focus{border-color:#0d9488;box-shadow:0 0 0 3px rgba(13,148,136,.1)}
+.form-input.err{border-color:#dc2626;background:#fff}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;display:flex;align-items:center}
+.select-wrap{position:relative}
+.form-select{width:100%;height:44px;border:1.5px solid #e5e7eb;border-radius:8px;padding:0 36px 0 14px;font-size:14px;color:#111827;background:#fff;appearance:none;font-family:'Inter',sans-serif;font-weight:500;cursor:pointer;outline:none;transition:border-color .15s,box-shadow .15s}
+.form-select:focus{border-color:#0d9488;box-shadow:0 0 0 3px rgba(13,148,136,.1)}
+.select-chevron{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:#9ca3af}
+.form-row{display:flex;justify-content:space-between;align-items:center;margin:20px 0}
+.checkbox-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#6b7280;font-weight:500}
+.checkbox-label input{width:15px;height:15px;accent-color:#0d9488;cursor:pointer}
+.forgot{font-size:13px;color:#0d9488;font-weight:600;text-decoration:none}
+.btn-signin{width:100%;height:46px;background:linear-gradient(135deg,#0d9488,#14b8a6);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 4px 14px rgba(13,148,136,.35);transition:all .15s;letter-spacing:.01em}
+.btn-signin:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(13,148,136,.45)}
+.btn-signin:active{transform:translateY(0)}
+.access-note{margin-top:28px;padding-top:20px;border-top:1px solid #e5e7eb}
+.access-title{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.access-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px;color:#6b7280;font-weight:500}
+.access-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="left">
+  <div>
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 17h14M7 13h10M7 9h6" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+      <div><div class="brand-name">TransitOps</div><div class="brand-tag">Smart Transport Operations</div></div>
+    </div>
+    <h1 class="hero-heading">One login.<br><span>Four roles.</span></h1>
+    <p class="hero-sub">Your access is scoped immediately after sign-in. No extra setup required by your administrator.</p>
+    <div class="roles-section">
+      <div class="roles-title">Role-based access</div>
+      <div class="role-item"><div class="role-dot" style="background:#0d9488"></div><div><div class="role-name">Fleet Manager</div><div class="role-desc">Fleet, Maintenance, Analytics</div></div></div>
+      <div class="role-item"><div class="role-dot" style="background:#d97706"></div><div><div class="role-name">Dispatcher</div><div class="role-desc">Dashboard, Trips, Live Board</div></div></div>
+      <div class="role-item"><div class="role-dot" style="background:#dc2626"></div><div><div class="role-name">Safety Officer</div><div class="role-desc">Drivers, Compliance, Alerts</div></div></div>
+      <div class="role-item"><div class="role-dot" style="background:#7c3aed"></div><div><div class="role-name">Financial Analyst</div><div class="role-desc">Fuel, Expenses, Reports</div></div></div>
+    </div>
+  </div>
+  <div class="left-footer">TransitOps © 2026 · Enterprise Access Only</div>
+</div>
+<div class="right">
+  <div class="form-box">
+    <div class="form-title">Sign in to your account</div>
+    <div class="form-sub">Enter your credentials to continue</div>
+    <div class="error-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      <div><div class="error-title">Invalid credentials</div><div class="error-desc">Account locked after 5 failed attempts. Contact admin.</div></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <div class="input-wrap"><input class="form-input err" type="text" value="RavenK@transitops.in" readonly></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="input-wrap">
+        <input class="form-input err" type="password" value="testpass" readonly>
+        <button class="pw-eye" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Role (RBAC)</label>
+      <div class="select-wrap">
+        <select class="form-select"><option>Dispatcher</option><option>Fleet Manager</option><option>Safety Officer</option><option>Financial Analyst</option></select>
+        <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="checkbox-label"><input type="checkbox" checked> Remember me</label>
+      <a href="#" class="forgot">Forgot password?</a>
+    </div>
+    <button class="btn-signin">Sign In</button>
+    <div class="access-note">
+      <div class="access-title">Access is scoped by role after login</div>
+      <div class="access-row"><div class="access-dot" style="background:#0d9488"></div>Fleet Manager → Fleet, Maintenance, Analytics</div>
+      <div class="access-row"><div class="access-dot" style="background:#d97706"></div>Dispatcher → Dashboard, Trips, Live Board</div>
+      <div class="access-row"><div class="access-dot" style="background:#dc2626"></div>Safety Officer → Drivers, Compliance, Alerts</div>
+      <div class="access-row"><div class="access-dot" style="background:#7c3aed"></div>Financial Analyst → Fuel & Expenses, Reports</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TransitOps — Trip Dispatcher</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.dispatch-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:20px}
+/* Lifecycle timeline */
+.lifecycle{display:flex;align-items:center;margin-bottom:24px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px}
+.lc-step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative}
+.lc-step:not(:last-child)::after{content:'';position:absolute;top:14px;left:60%;width:80%;height:2px;background:#e2e8f0;z-index:0}
+.lc-step.done::after{background:#0d9488}
+.lc-dot{width:28px;height:28px;border-radius:50%;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:center;background:#fff;position:relative;z-index:1;font-size:11px;font-weight:700;color:#94a3b8;transition:all .2s}
+.lc-step.done .lc-dot{background:#0d9488;border-color:#0d9488;color:#fff}
+.lc-step.active .lc-dot{background:#fff;border-color:#0d9488;border-width:2.5px;color:#0d9488;box-shadow:0 0 0 4px rgba(13,148,136,.12)}
+.lc-label{font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap}
+.lc-step.done .lc-label,.lc-step.active .lc-label{color:#0f172a;font-weight:700}
+/* Live Board cards */
+.live-board{display:flex;flex-direction:column;gap:12px;max-height:640px;overflow-y:auto}
+.lb-card{border-radius:10px;border:1px solid #e2e8f0;padding:14px 16px;cursor:pointer;transition:box-shadow .15s}
+.lb-card:hover{box-shadow:0 4px 12px rgba(15,23,42,.08)}
+.lb-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.lb-trip-id{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#0f172a}
+.lb-route{font-size:12px;color:#475569;margin-bottom:10px;line-height:1.5}
+.lb-meta{display:flex;align-items:center;justify-content:space-between}
+.lb-vehicle{font-size:12px;font-weight:600;color:#0f172a}
+.lb-driver{display:flex;align-items:center;gap:5px;font-size:11.5px;color:#64748b}
+.lb-eta{font-size:11px;font-weight:600;color:#059669;background:#ecfdf5;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+/* Create form */
+.create-form{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:24px}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.cap-error{background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin:10px 0}
+.cap-error-title{font-size:12px;font-weight:700;color:#991b1b;display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.cap-error-row{font-size:11.5px;color:#b91c1c;line-height:1.6}
+.biz-rules{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-top:16px}
+.biz-title{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.biz-rule{font-size:11.5px;color:#64748b;margin-bottom:6px;display:flex;align-items:flex-start;gap:6px;line-height:1.5}
+.biz-rule::before{content:'·';font-size:16px;line-height:1;flex-shrink:0;color:#94a3b8}
+.status-highlight{font-weight:700;padding:1px 5px;border-radius:3px}
+.on-trip{background:#fef3c7;color:#d97706}
+.available{background:#ecfdf5;color:#059669}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><div style="display:flex;align-items:center;gap:10px"><div class="logo-mark">T</div><div><div style="font-size:14px;font-weight:700;color:#f1f5f9">TransitOps</div><div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.12em;font-weight:600">Operations</div></div></div></div>
+  <div class="sidebar-nav">
+    <div class="nav-group-label">Command</div>
+    <a class="nav-item" href="02-dashboard.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-item" href="03-vehicle-registry.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>Fleet</a>
+    <a class="nav-item" href="04-drivers.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Drivers</a>
+    <a class="nav-item active" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Trips<span class="nav-badge">18</span></a>
+    <div class="nav-group-label" style="padding-top:16px">Operations</div>
+    <a class="nav-item" href="06-maintenance.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Maintenance</a>
+    <a class="nav-item" href="07-fuel-expenses.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Fuel &amp; Expenses</a>
+    <a class="nav-item" href="08-analytics.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>Analytics</a>
+  </div>
+  <div class="sidebar-footer"><div class="avatar" style="background:#b45309">RK</div><div class="avatar-info"><div class="avatar-name">Raven K.</div><div class="avatar-role">Dispatcher</div></div></div>
+</nav>
+
+<div class="main-content">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb">Command</div>
+      <div class="page-title">Trip Dispatcher</div>
+    </div>
+    <div class="topbar-right">
+      <div class="search-bar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" placeholder="Search trips..."></div>
+      <button class="btn btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Trip</button>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <!-- Lifecycle Timeline -->
+    <div class="lifecycle">
+      <div class="lc-step done">
+        <div class="lc-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="lc-label">Draft</div>
+      </div>
+      <div class="lc-step active done">
+        <div class="lc-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="lc-label">Dispatched</div>
+      </div>
+      <div class="lc-step">
+        <div class="lc-dot">3</div>
+        <div class="lc-label">Completed</div>
+      </div>
+      <div class="lc-step">
+        <div class="lc-dot">✕</div>
+        <div class="lc-label">Cancelled</div>
+      </div>
+    </div>
+
+    <div class="dispatch-grid">
+      <!-- Left: Create Trip Form -->
+      <div>
+        <div class="create-form">
+          <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:20px;letter-spacing:-.02em">Create Trip</div>
+          <div class="form-grid-2">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Source</label>
+              <input type="text" class="form-input" value="Gandhinagar" style="height:40px">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Destination</label>
+              <input type="text" class="form-input" value="Ahmedabad" style="height:40px">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:14px">
+            <label class="form-label">Vehicle <span style="color:#94a3b8;text-transform:none;font-weight:500">(Available only)</span></label>
+            <select class="form-select" style="height:40px"><option>Van-05 — 500 kg capacity</option><option>Van-03 — 500 kg capacity</option><option>Truck-01 — 5 Ton capacity</option></select>
+          </div>
+          <div class="form-group" style="margin-bottom:14px">
+            <label class="form-label">Driver <span style="color:#94a3b8;text-transform:none;font-weight:500">(Available only)</span></label>
+            <select class="form-select" style="height:40px"><option>Alex — DL-88213-L</option><option>Suresh — DL-81490-L</option></select>
+          </div>
+          <div class="form-grid-2" style="margin-bottom:14px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Cargo Weight (KG)</label>
+              <input type="number" class="form-input" value="700" style="height:40px;border-color:#dc2626;background:#fff">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Planned Distance (KM)</label>
+              <input type="number" class="form-input" value="32" style="height:40px">
+            </div>
+          </div>
+
+          <!-- Capacity Error -->
+          <div class="cap-error">
+            <div class="cap-error-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Capacity exceeded by 200 kg
+            </div>
+            <div class="cap-error-row">Vehicle capacity: 500 kg</div>
+            <div class="cap-error-row">Cargo weight: 700 kg</div>
+            <div class="cap-error-row" style="font-weight:700">✕ Dispatch blocked</div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button class="btn btn-ghost" style="flex:1;opacity:.5;cursor:not-allowed" disabled>Dispatch (Blocked)</button>
+            <button class="btn btn-primary" style="flex:1;background:#f1f5f9;color:#475569;box-shadow:none;background:transparent;border:1px solid #e2e8f0">Save Draft</button>
+          </div>
+        </div>
+
+        <!-- Business Rules -->
+        <div class="biz-rules" style="margin-top:16px">
+          <div class="biz-title">Business Rules</div>
+          <div class="biz-rule">On dispatch: Vehicle &amp; Driver status → <span class="status-highlight on-trip">On Trip</span></div>
+          <div class="biz-rule">On complete: Driver odometer &amp; fuel — status → <span class="status-highlight available">Available</span></div>
+          <div class="biz-rule">On cancel: Vehicle &amp; Driver restored to <span class="status-highlight available">Available</span></div>
+        </div>
+      </div>
+
+      <!-- Right: Live Board -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="font-size:15px;font-weight:700;color:#0f172a">Live Board</div>
+          <button class="btn btn-ghost btn-sm" style="gap:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Auto-refresh
+          </button>
+        </div>
+        <div class="live-board">
+          <!-- Dispatched card -->
+          <div class="lb-card" style="border-left:3px solid #d97706">
+            <div class="lb-card-header">
+              <span class="lb-trip-id">TRP-2041</span>
+              <span class="pill pill-dispatched">Dispatched</span>
+            </div>
+            <div class="lb-route">Gandhinagar Depot → Ahmedabad Hub</div>
+            <div class="lb-meta">
+              <div><div class="lb-vehicle">Truck-05</div><div class="lb-driver"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Alex J.</div></div>
+              <span class="lb-eta">45 min ETA</span>
+            </div>
+          </div>
+          <!-- Draft / Awaiting Driver -->
+          <div class="lb-card" style="border-left:3px solid #e2e8f0">
+            <div class="lb-card-header">
+              <span class="lb-trip-id">TRP-2044</span>
+              <span class="pill pill-draft">Draft</span>
+            </div>
+            <div class="lb-route">Vatva Industrial Area → Sanand Warehouse</div>
+            <div class="lb-meta">
+              <div><div class="lb-vehicle">Truck-44</div><div class="lb-driver"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>—</div></div>
+              <span style="font-size:11px;font-weight:600;color:#d97706;background:#fef3c7;padding:2px 6px;border-radius:4px">Awaiting driver</span>
+            </div>
+          </div>
+          <!-- Cancelled -->
+          <div class="lb-card" style="border-left:3px solid #dc2626;opacity:.8">
+            <div class="lb-card-header">
+              <span class="lb-trip-id">TRP-2046</span>
+              <span class="pill pill-cancelled">Cancelled</span>
+            </div>
+            <div class="lb-route">Manasa → Kalol Depot</div>
+            <div class="lb-meta">
+              <div><div class="lb-vehicle">Truck-12</div><div style="font-size:11px;color:#94a3b8;margin-top:2px">Vehicle went to shop</div></div>
+            </div>
+          </div>
+          <!-- Completed -->
+          <div class="lb-card" style="border-left:3px solid #059669">
+            <div class="lb-card-header">
+              <span class="lb-trip-id">TRP-2040</span>
+              <span class="pill pill-completed">Completed</span>
+            </div>
+            <div class="lb-route">Port Terminal → North Depot</div>
+            <div class="lb-meta">
+              <div><div class="lb-vehicle">Truck-12</div><div class="lb-driver"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Maria C.</div></div>
+              <span style="font-size:11px;font-weight:700;color:#059669;font-family:'JetBrains Mono',monospace">₹1,260 km</span>
+            </div>
+          </div>
+          <!-- Another dispatched -->
+          <div class="lb-card" style="border-left:3px solid #d97706">
+            <div class="lb-card-header">
+              <span class="lb-trip-id">TRP-2042</span>
+              <span class="pill pill-dispatched">Dispatched</span>
+            </div>
+            <div class="lb-route">Kadi Hub → Mehsana Depot</div>
+            <div class="lb-meta">
+              <div><div class="lb-vehicle">Van-03</div><div class="lb-driver"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Priya N.</div></div>
+              <span class="lb-eta">20 min ETA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
