@@ -166,19 +166,26 @@ export default function Drivers() {
               <label className="form-label">Name</label>
               <input type="text" className="form-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Full Name" />
             </div>
-            <div className="form-group">
-              <label className="form-label">License Number</label>
-              <input type="text" className="form-input" value={license} onChange={e=>setLicense(e.target.value)} placeholder="XX00 XX 0000" />
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
+              <div>
+                <label className="form-label">License Number</label>
+                <input type="text" className="form-input" value={license} onChange={e=>{
+                  let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                  if (val.length > 4) val = val.substring(0,4) + ' ' + val.substring(4);
+                  if (val.length > 7) val = val.substring(0,7) + ' ' + val.substring(7);
+                  setLicense(val.substring(0,12));
+                }} placeholder="XX00 XX 0000" />
+              </div>
+              <div>
+                <label className="form-label">Expiry Date</label>
+                <input type="month" className="form-input" value={expiry} onChange={e=>setExpiry(e.target.value)} />
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">License Category</label>
               <select className="form-select" value={category} onChange={e=>setCategory(e.target.value)}>
                 <option>LMV</option><option>MCV</option><option>HGV</option>
               </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Expiry Date</label>
-              <input type="month" className="form-input" value={expiry} onChange={e=>setExpiry(e.target.value)} />
             </div>
             <div style={{display:'flex',justifyContent:'flex-end',gap:10,marginTop:20}}>
               <button className="btn btn-ghost" onClick={()=>setShowAdd(false)}>Cancel</button>

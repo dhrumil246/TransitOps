@@ -81,7 +81,7 @@ export default function Maintenance() {
             </div>
             <div className="form-group" style={{margin:0}}>
               <label className="form-label">Cost (₹)</label>
-              <input className="form-input" type="number" value={cost} onChange={e=>setCost(Number(e.target.value))} placeholder="Enter amount" />
+              <input className="form-input" type="text" value={cost||''} onChange={e=>setCost(Number(e.target.value.replace(/\D/g, '')))} placeholder="Enter amount" />
             </div>
             <div className="form-group" style={{margin:0}}>
               <label className="form-label">Date</label>

@@ -156,11 +156,11 @@ export default function Trips() {
             <div className="form-grid-2" style={{marginBottom:14}}>
               <div className="form-group" style={{margin:0}}>
                 <label className="form-label">Cargo Weight (KG)</label>
-                <input type="number" className="form-input" value={cargo} onChange={e=>setCargo(Number(e.target.value))} style={{height:40}} />
+                <input type="text" className="form-input" value={cargo||''} onChange={e=>setCargo(Number(e.target.value.replace(/\D/g, '')))} style={{height:40}} />
               </div>
               <div className="form-group" style={{margin:0}}>
                 <label className="form-label">Planned Distance (KM)</label>
-                <input type="number" className="form-input" value={distance} onChange={e=>setDistance(Number(e.target.value))} style={{height:40}} />
+                <input type="text" className="form-input" value={distance||''} onChange={e=>setDistance(Number(e.target.value.replace(/\D/g, '')))} style={{height:40}} />
               </div>
             </div>
 

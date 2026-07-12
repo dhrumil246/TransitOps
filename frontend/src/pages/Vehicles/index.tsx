@@ -155,10 +155,10 @@ export default function Vehicles() {
               <div><label className="form-label">Sub-Type</label><input className="form-input" value={mSubtype} onChange={e=>setMSubtype(e.target.value)} placeholder="e.g. Standard" /></div>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
-              <div><label className="form-label">Capacity (kg)</label><input className="form-input" type="number" value={mCapacity} onChange={e=>setMCapacity(e.target.value)} placeholder="500" /></div>
-              <div><label className="form-label">Acq. Cost (₹)</label><input className="form-input" type="number" value={mCost} onChange={e=>setMCost(e.target.value)} placeholder="430000" /></div>
+              <div><label className="form-label">Capacity (kg)</label><input className="form-input" type="text" value={mCapacity} onChange={e=>setMCapacity(e.target.value.replace(/\D/g, ''))} placeholder="500" /></div>
+              <div><label className="form-label">Acq. Cost (₹)</label><input className="form-input" type="text" value={mCost} onChange={e=>setMCost(e.target.value.replace(/\D/g, ''))} placeholder="430000" /></div>
             </div>
-            <div style={{marginBottom:14}}><label className="form-label">Odometer (km)</label><input className="form-input" type="number" value={mOdo} onChange={e=>setMOdo(e.target.value)} placeholder="0" /></div>
+            <div style={{marginBottom:14}}><label className="form-label">Odometer (km)</label><input className="form-input" type="text" value={mOdo} onChange={e=>setMOdo(e.target.value.replace(/\D/g, ''))} placeholder="0" /></div>
             <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
               <button className="btn btn-ghost" onClick={()=>setIsAddModalOpen(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={saveVehicle}>Add Vehicle</button>
