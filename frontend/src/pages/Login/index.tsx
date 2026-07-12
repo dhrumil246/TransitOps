@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import { api } from '../../lib/api';
 import './login.css';
 
 const DEMO_CREDS: Record<string, {password:string;name:string;initials:string}> = {
@@ -26,7 +28,6 @@ export default function Login() {
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<{title:string;desc:string}|null>(null);
   const [loading, setLoading] = useState(false);
-  const [failCount, setFailCount] = useState(0);
   const [resetMsg, setResetMsg] = useState('');
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -44,40 +45,42 @@ export default function Login() {
     setSubText(`Signing in as ${role}`);
   }
 
+  const loginMutation = useMutation({
+    mutationFn: async (credentials: any) => {
+      return api<any>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+    },
+    onSuccess: (data) => {
+      const { token, user } = data;
+      localStorage.setItem('to_token', token);
+      
+      let initials = user.name.slice(0, 2).toUpperCase();
+      const parts = user.name.split(' ');
+      if (parts.length > 1) {
+        initials = parts[0][0].toUpperCase() + parts[1][0].toUpperCase();
+      }
+
+      const session = { email: user.email, role: user.role, name: user.name, initials };
+      localStorage.setItem('to_session', JSON.stringify(session));
+      if (remember) localStorage.setItem('to_remembered', JSON.stringify({ email: user.email, role: user.role }));
+      else localStorage.removeItem('to_remembered');
+
+      navigate('/dashboard');
+    },
+    onError: (err: any) => {
+      
+      setError({ title: 'Invalid credentials', desc: err.error || 'Incorrect email or password.' });
+    }
+  });
+
   function handleSignIn() {
     setError(null);
     if (!email.trim()) { setError({title:'Email required', desc:'Please enter your email address.'}); return; }
     if (!password) { setError({title:'Password required', desc:'Please enter your password.'}); return; }
 
-    setLoading(true);
-    setTimeout(() => {
-      const e = email.trim().toLowerCase();
-      const known = DEMO_CREDS[e];
-      let name = 'Demo User', initials = 'DU';
-
-      if (known) {
-        if (known.password !== password) {
-          const fc = failCount + 1;
-          setFailCount(fc);
-          setLoading(false);
-          if (fc >= 3) {
-            setError({title:'Too many failed attempts', desc:`Account temporarily locked. Try again in 15 minutes. (${5-fc} attempts left)`});
-          } else {
-            setError({title:'Invalid credentials', desc:`Incorrect password. ${5-fc} attempts remaining.`});
-          }
-          return;
-        }
-        name = known.name;
-        initials = known.initials;
-      }
-
-      const session = { email: e, role: selectedRole, name, initials };
-      localStorage.setItem('to_session', JSON.stringify(session));
-      if (remember) localStorage.setItem('to_remembered', JSON.stringify({ email: e, role: selectedRole }));
-      else localStorage.removeItem('to_remembered');
-
-      navigate('/dashboard');
-    }, 900);
+    loginMutation.mutate({ email: email.trim(), password });
   }
 
   function handleForgotSend() {

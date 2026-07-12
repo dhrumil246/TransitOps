@@ -14,6 +14,10 @@ export async function api<T>(path: string, opts: RequestInit = {}): Promise<T> {
   });
   
   if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem('to_token');
+      window.location.href = '/login';
+    }
     const errorBody = await res.json().catch(() => ({}));
     throw errorBody;
   }

@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../lib/api';
 
 function load(key: string) { try { return JSON.parse(localStorage.getItem('to_' + key) || 'null'); } catch { return null; } }
 function save(key: string, val: any) { localStorage.setItem('to_' + key, JSON.stringify(val)); }
 
 export default function Settings() {
-  const [s, setS] = useState<any>({});
-  useEffect(() => { setS(load('settings') || {}); }, []);
+  const [s, setS] = useState<any>(load('settings') || {});
+  const { data: permissions } = useQuery({ queryKey: ['permissions'], queryFn: () => api<any>('/settings/permissions') });
 
   function handleSave() {
     save('settings', s);
@@ -32,7 +34,19 @@ export default function Settings() {
             </select>
           </div>
           <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
+
+          {permissions && (
+            <div style={{marginTop: 32}}>
+              <div className="form-section-title">My Permissions ({permissions.role})</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                {permissions.allowedActions?.map((action:string)=>(
+                  <span key={action} style={{background:'#f1f5f9',padding:'4px 10px',borderRadius:6,fontSize:12,fontWeight:600,color:'#475569'}}>{action}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+        
         <div className="card" style={{padding:24}}>
           <div className="form-section-title">System Toggles</div>
           {[

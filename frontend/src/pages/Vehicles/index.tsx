@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-
-function load(key: string) { try { return JSON.parse(localStorage.getItem('to_' + key) || 'null'); } catch { return null; } }
-function save(key: string, val: any) { localStorage.setItem('to_' + key, JSON.stringify(val)); }
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../lib/api';
 
 export default function Vehicles() {
-  const { searchQuery } = useOutletContext<{searchQuery:string}>();
-  const [vehicles, setVehicles] = useState<any[]>([]);
+  const context = useOutletContext<{searchQuery:string}>();
+  // Using context or ignore if unused to avoid TS error
+  const searchQuery = context?.searchQuery || '';
+  const queryClient = useQueryClient();
+  const { data: vehicles = [], isLoading } = useQuery({ queryKey: ['vehicles'], queryFn: () => api<any[]>('/vehicles') });
+
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -29,16 +32,15 @@ export default function Vehicles() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<string | null>(null);
 
-  useEffect(() => { setVehicles(load('vehicles') || []); }, []);
-
-  function reload() { setVehicles([...(load('vehicles') || [])]); }
-
   const filtered = vehicles.filter(v => {
-    if (search && !v.name.toLowerCase().includes(search.toLowerCase()) && !v.id.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterType && v.type !== filterType) return false;
-    if (filterStatus && v.status !== filterStatus) return false;
+    if (search && !v.name.toLowerCase().includes(search.toLowerCase()) && !v.regNo.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterType && v.type !== filterType.toUpperCase()) return false;
+    if (filterStatus && v.status !== filterStatus.toUpperCase().replace(' ', '_')) return false;
     return true;
   });
+
+  const formatStatus = (s: string) => s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const formatType = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 
   const STATUS_PILL: Record<string,string> = { Available:'pill-available', 'On Trip':'pill-ontrip', 'In Shop':'pill-inshop', Retired:'pill-retired' };
   const TYPE_CLASS: Record<string,string> = { Van:'type-van', Truck:'type-truck', Mini:'type-mini' };
@@ -46,31 +48,41 @@ export default function Vehicles() {
   const FMT_ODO  = (n: number) => Number(n).toLocaleString('en-IN') + ' km';
   const FMT_CAP  = (n: number) => n >= 1000 ? (n/1000) + ' Ton' : n + ' kg';
 
-  function saveVehicle() {
-    if(!mReg || !mName || !mModel || !mCapacity || !mCost) return alert("Fill all required fields");
+  const createMutation = useMutation({
+    mutationFn: (v: any) => api('/vehicles', { method: 'POST', body: JSON.stringify(v) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      setIsAddModalOpen(false);
+      setMReg(''); setMName(''); setMModel(''); setMSubtype(''); setMCapacity(''); setMCost(''); setMOdo('');
+    },
+    onError: (err: any) => alert(err.error || 'Failed to create vehicle')
+  });
+
+  function saveVehicle(e: React.FormEvent) {
+    e.preventDefault();
     const v = {
-      id: mReg, name: mName, model: mModel, type: mType, subtype: mSubtype,
-      capacity: Number(mCapacity), cost: Number(mCost), odo: Number(mOdo)||0, status: 'Available'
+      regNo: mReg, name: mName, type: mType.toUpperCase(),
+      maxLoadKg: Number(mCapacity), acquisitionCost: Number(mCost), odometer: Number(mOdo)||0, status: 'AVAILABLE'
     };
-    const all = [v, ...vehicles];
-    save('vehicles', all);
-    setIsAddModalOpen(false);
-    setMReg(''); setMName(''); setMModel(''); setMSubtype(''); setMCapacity(''); setMCost(''); setMOdo('');
-    reload();
+    createMutation.mutate(v);
   }
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: any }) => api(`/vehicles/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      setIsStatusModalOpen(false);
+    },
+    onError: (err: any) => alert(err.error || 'Failed to update vehicle')
+  });
 
   function applyStatusChange() {
     if (!editingId || !newStatus) return;
-    const all = [...vehicles];
-    const v = all.find(x => x.id === editingId);
-    if (v) v.status = newStatus;
-    save('vehicles', all);
-    setIsStatusModalOpen(false);
-    reload();
+    updateMutation.mutate({ id: editingId, data: { status: newStatus.toUpperCase().replace(' ', '_') } });
   }
 
   function exportCSV() {
-    const csv = [['RegNo','Name','Type','Capacity','Cost','Odo','Status'].join(','), ...filtered.map(v => [v.id,v.name,v.type,v.capacity,v.cost,v.odo,v.status].join(','))].join('\n');
+    const csv = [['RegNo','Name','Type','Capacity','Cost','Odo','Status'].join(','), ...filtered.map(v => [v.regNo,v.name,v.type,v.maxLoadKg,v.acquisitionCost,v.odometer,v.status].join(','))].join('\n');
     const a = document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='vehicles.csv'; a.click();
   }
 
@@ -110,18 +122,18 @@ export default function Vehicles() {
             <th>Capacity</th><th>Acq. Cost</th><th>Odometer</th><th>Status</th><th style={{width:40}}></th>
           </tr></thead>
           <tbody>
-            {filtered.map(v => (
+            {isLoading ? <tr><td colSpan={9} style={{textAlign:'center',padding:48,color:'#94a3b8',fontSize:13}}>Loading...</td></tr> : filtered.map(v => (
               <tr key={v.id}>
-                <td><span className="mono-id">{v.id}</span></td>
+                <td><span className="mono-id">{v.regNo}</span></td>
                 <td><div style={{fontSize:13,fontWeight:600,color:'#0f172a'}}>{v.name}</div><div style={{fontSize:11,color:'#94a3b8',marginTop:1}}>{v.model}</div></td>
-                <td><span className={`type-badge ${TYPE_CLASS[v.type]||''}`}>{v.type}</span></td>
+                <td><span className={`type-badge ${TYPE_CLASS[formatType(v.type)]||''}`}>{formatType(v.type)}</span></td>
                 <td style={{color:'#94a3b8',fontSize:12}}>{v.subtype}</td>
-                <td style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:600,color:'#0f172a'}}>{FMT_CAP(v.capacity)}</td>
-                <td><span className="acq-cost">{FMT_COST(v.cost)}</span></td>
-                <td><span className="odo">{FMT_ODO(v.odo)}</span></td>
-                <td><span className={`pill ${STATUS_PILL[v.status]||''}`}>{v.status}</span></td>
+                <td style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:600,color:'#0f172a'}}>{FMT_CAP(v.maxLoadKg)}</td>
+                <td><span className="acq-cost">{FMT_COST(v.acquisitionCost)}</span></td>
+                <td><span className="odo">{FMT_ODO(v.odometer)}</span></td>
+                <td><span className={`pill ${STATUS_PILL[formatStatus(v.status)]||''}`}>{formatStatus(v.status)}</span></td>
                 <td>
-                  <button onClick={()=>{setEditingId(v.id); setNewStatus(v.status); setIsStatusModalOpen(true);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',display:'flex',alignItems:'center',padding:4}}>
+                  <button onClick={()=>{setEditingId(v.id); setNewStatus(formatStatus(v.status)); setIsStatusModalOpen(true);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',display:'flex',alignItems:'center',padding:4}}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
                   </button>
                 </td>
@@ -138,32 +150,32 @@ export default function Vehicles() {
 
       {isAddModalOpen && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.4)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <div style={{background:'#fff',borderRadius:12,padding:28,maxWidth:500,width:'90%',maxHeight:'90vh',overflowY:'auto',boxShadow:'0 20px 60px rgba(0,0,0,.2)'}}>
+          <form onSubmit={saveVehicle} style={{background:'#fff',borderRadius:12,padding:28,maxWidth:500,width:'90%',maxHeight:'90vh',overflowY:'auto',boxShadow:'0 20px 60px rgba(0,0,0,.2)'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
               <div style={{fontSize:16,fontWeight:700,color:'#0f172a'}}>Add Vehicle</div>
-              <button onClick={()=>setIsAddModalOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',fontSize:20}}>✕</button>
+              <button type="button" onClick={()=>setIsAddModalOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',fontSize:20}}>✕</button>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
-              <div><label className="form-label">Registration No.</label><input className="form-input" value={mReg} onChange={e=>setMReg(e.target.value)} placeholder="e.g. GJ01AB1234" /></div>
-              <div><label className="form-label">Vehicle Name</label><input className="form-input" value={mName} onChange={e=>setMName(e.target.value)} placeholder="e.g. Van-06" /></div>
+              <div><label className="form-label">Registration No.</label><input className="form-input" value={mReg} onChange={e=>setMReg(e.target.value)} placeholder="e.g. GJ01AB1234" required /></div>
+              <div><label className="form-label">Vehicle Name</label><input className="form-input" value={mName} onChange={e=>setMName(e.target.value)} placeholder="e.g. Van-06" required /></div>
             </div>
-            <div style={{marginBottom:14}}><label className="form-label">Make & Model</label><input className="form-input" value={mModel} onChange={e=>setMModel(e.target.value)} placeholder="e.g. Tata Prima" /></div>
+            <div style={{marginBottom:14}}><label className="form-label">Make & Model</label><input className="form-input" value={mModel} onChange={e=>setMModel(e.target.value)} placeholder="e.g. Tata Prima" required /></div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
               <div><label className="form-label">Type</label>
-                <select className="form-select" value={mType} onChange={e=>setMType(e.target.value)}><option>Van</option><option>Truck</option><option>Mini</option></select>
+                <select className="form-select" value={mType} onChange={e=>setMType(e.target.value)} required><option>Van</option><option>Truck</option><option>Mini</option></select>
               </div>
               <div><label className="form-label">Sub-Type</label><input className="form-input" value={mSubtype} onChange={e=>setMSubtype(e.target.value)} placeholder="e.g. Standard" /></div>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
-              <div><label className="form-label">Capacity (kg)</label><input className="form-input" type="text" value={mCapacity} onChange={e=>setMCapacity(e.target.value.replace(/\D/g, ''))} placeholder="500" /></div>
-              <div><label className="form-label">Acq. Cost (₹)</label><input className="form-input" type="text" value={mCost} onChange={e=>setMCost(e.target.value.replace(/\D/g, ''))} placeholder="430000" /></div>
+              <div><label className="form-label">Capacity (kg)</label><input className="form-input" type="number" min="1" value={mCapacity} onChange={e=>setMCapacity(e.target.value)} placeholder="500" required /></div>
+              <div><label className="form-label">Acq. Cost (₹)</label><input className="form-input" type="number" min="0" value={mCost} onChange={e=>setMCost(e.target.value)} placeholder="430000" required /></div>
             </div>
-            <div style={{marginBottom:14}}><label className="form-label">Odometer (km)</label><input className="form-input" type="text" value={mOdo} onChange={e=>setMOdo(e.target.value.replace(/\D/g, ''))} placeholder="0" /></div>
+            <div style={{marginBottom:14}}><label className="form-label">Odometer (km)</label><input className="form-input" type="number" min="0" value={mOdo} onChange={e=>setMOdo(e.target.value)} placeholder="0" /></div>
             <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
-              <button className="btn btn-ghost" onClick={()=>setIsAddModalOpen(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={saveVehicle}>Add Vehicle</button>
+              <button type="button" className="btn btn-ghost" onClick={()=>setIsAddModalOpen(false)}>Cancel</button>
+              <button type="submit" className="btn btn-primary">Add Vehicle</button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 

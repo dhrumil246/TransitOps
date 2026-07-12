@@ -1,32 +1,31 @@
-import React, { useState, useEffect } from 'react';
-
-function load(key: string) { try { return JSON.parse(localStorage.getItem('to_' + key) || 'null'); } catch { return null; } }
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../lib/api';
 
 export default function Dashboard() {
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [trips, setTrips] = useState<any[]>([]);
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [maint, setMaint] = useState<any[]>([]);
   const [showAlert, setShowAlert] = useState(true);
 
-  useEffect(() => {
-    setVehicles(load('vehicles') || []);
-    setTrips(load('trips') || []);
-    setDrivers(load('drivers') || []);
-    setMaint(load('maintenance') || []);
-  }, []);
+  const { data: kpis } = useQuery({
+    queryKey: ['dashboard-kpis'],
+    queryFn: () => api<any>('/dashboard/kpis')
+  });
 
-  const totalVehicles = vehicles.length;
-  const activeVehicles = vehicles.filter(v => v.status === 'Available' || v.status === 'On Trip').length;
-  const utilization = totalVehicles ? ((activeVehicles / totalVehicles) * 100).toFixed(1) : '0.0';
+  const { data: maintenance = [] } = useQuery({
+    queryKey: ['maintenance'],
+    queryFn: () => api<any[]>('/maintenance')
+  });
 
-  const activeTrips = trips.filter(t => t.status === 'En Route' || t.status === 'Dispatched' || t.status === 'Draft').length;
-  const driversOnDuty = drivers.filter(d => d.status === 'Available' || d.status === 'On Trip').length;
-  
-  const vAvailable = vehicles.filter(v => v.status === 'Available').length;
-  const vOnTrip = vehicles.filter(v => v.status === 'On Trip').length;
-  const vInShop = vehicles.filter(v => v.status === 'In Shop').length;
-  const vRetired = vehicles.filter(v => v.status === 'Retired').length;
+  const vAvailable = kpis?.vehicleStatusBreakdown?.AVAILABLE || 0;
+  const vOnTrip = kpis?.vehicleStatusBreakdown?.ON_TRIP || 0;
+  const vInShop = kpis?.vehicleStatusBreakdown?.IN_SHOP || 0;
+  const vRetired = kpis?.vehicleStatusBreakdown?.RETIRED || 0;
+  const totalVehicles = vAvailable + vOnTrip + vInShop + vRetired;
+  const activeVehicles = kpis?.activeVehicles || (vAvailable + vOnTrip);
+  const utilization = kpis?.fleetUtilizationPct || (totalVehicles ? ((activeVehicles / totalVehicles) * 100).toFixed(1) : '0.0');
+
+  const activeTrips = kpis?.activeTrips || 0;
+  const driversOnDuty = kpis?.driversOnDuty || 0;
+
 
   return (
     <>
@@ -75,7 +74,7 @@ export default function Dashboard() {
         <div className="kpi-card">
           <div className="kpi-label">Drivers On Duty</div>
           <div className="kpi-value">{driversOnDuty}</div>
-          <div style={{marginTop:14,fontSize:11,color:'#94a3b8',fontWeight:500}}>of {drivers.length} total assigned</div>
+          <div style={{marginTop:14,fontSize:11,color:'#94a3b8',fontWeight:500}}>of active drivers assigned</div>
         </div>
       </div>
 
@@ -143,14 +142,14 @@ export default function Dashboard() {
           </div>
           <div className="side-card">
             <div className="card-title" style={{marginBottom:14}}>Upcoming Maintenance</div>
-            {maint.slice(0,2).map((m:any) => (
+            {maintenance.slice(0,2).map((m:any) => (
               <div className="maint-item" key={m.id}>
                 <div className="maint-icon" style={{background:'#fef3c7'}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
-                <div style={{flex:1,minWidth:0}}><div className="maint-name">{m.service} — {m.vehicle}</div><div className="maint-meta">Due soon</div></div>
+                <div style={{flex:1,minWidth:0}}><div className="maint-name">{m.serviceType} — {m.vehicleRegNo}</div><div className="maint-meta">Due soon</div></div>
                 <span className="maint-badge" style={{background:'#fef3c7',color:'#b45309',border:'1px solid #fde68a'}}>Soon</span>
               </div>
             ))}
-            {maint.length === 0 && <div style={{fontSize:12,color:'#64748b'}}>No upcoming maintenance.</div>}
+            {maintenance.length === 0 && <div style={{fontSize:12,color:'#64748b'}}>No upcoming maintenance.</div>}
           </div>
         </div>
       </div>
